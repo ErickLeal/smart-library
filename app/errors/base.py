@@ -15,3 +15,7 @@ class DatabaseError(AppError):
 class UnexpectedError(AppError):
     def __init__(self, message: str = "Erro inesperado", http_status: int = 500, code: str = "unexpected_error", meta: Optional[Dict[str, Any]] = None):
         super().__init__(message, http_status, code, meta)
+
+class ValidationError(AppError):
+    def __init__(self, message: str = "Erro de validação", http_status: int = 422, code: str = "validation_error", meta: dict = None):
+        super().__init__(message, http_status, code, meta)
