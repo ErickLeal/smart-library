@@ -13,13 +13,15 @@ AsyncSessionLocal = sessionmaker(
 
 from typing import AsyncGenerator
 
+from app.errors.base import DatabaseError
+
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
             yield session
             await session.commit()
-        except Exception:
+        except Exception as e:
             await session.rollback()
-            raise
+            raise e
         finally:
             await session.close()

@@ -1,0 +1,31 @@
+from fastapi.responses import JSONResponse
+from app.errors.base import AppError, DatabaseError, UnexpectedError
+from app.errors.base import AppError
+
+# Envelope de resposta
+class SucessResponseEnvelope:
+    def __init__(self, data=None):
+        self.data = data
+    def dict(self):
+        return {"success": True, "data": self.data}
+
+class ErrorResponseEnvelope:
+    def __init__(self, error=None):
+        self.error = error
+    def dict(self):
+        return {"success": False, "error": self.error}
+
+def error_handler(request, exc: Exception):
+    if isinstance(exc, AppError):
+        envelope = ErrorResponseEnvelope(error={
+            "code": exc.code,
+            "message": exc.message,
+            "meta": exc.meta
+        })
+        return JSONResponse(status_code=exc.http_status, content=envelope.dict())
+    # Erro não reconhecido
+    envelope = ErrorResponseEnvelope(success=False, error={
+        "code": "unexpected_error",
+        "message": "Erro inesperado. Tente novamente mais tarde."
+    })
+    return JSONResponse(status_code=500, content=envelope.dict())

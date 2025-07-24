@@ -21,11 +21,27 @@ class BookRepositoryPostgres(BookRepository):
         return None
 
     async def create(self, book: Book) -> Book:
+        from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+        from app.errors.base import DatabaseError
         db_book = BookModel(title=book.title, author=book.author, year=book.year, pages=book.pages, is_big=book.is_big, is_old=book.is_old)
         self.session.add(db_book)
-        await self.session.commit()
-        await self.session.refresh(db_book)
-        return Book(id=db_book.id, title=db_book.title, author=db_book.author, year=db_book.year, pages=db_book.pages, is_big=db_book.is_big, is_old=db_book.is_old)
+        try:
+            await self.session.commit()
+            await self.session.refresh(db_book)
+            return Book(id=db_book.id, title=db_book.title, author=db_book.author, year=db_book.year, pages=db_book.pages, is_big=db_book.is_big, is_old=db_book.is_old)
+        except IntegrityError:
+            raise DatabaseError(
+                message="Já existe um livro com esse título e autor.",
+                http_status=409,
+                code="db_unique_error",
+                meta={"fields": ["title", "author"]}
+            )
+        except SQLAlchemyError:
+            raise DatabaseError(
+                message="Erro ao acessar o banco de dados.",
+                http_status=500,
+                code="db_error"
+            )
 
     async def update(self, book: Book) -> Book:
         db_book = await self.session.get(BookModel, book.id)
